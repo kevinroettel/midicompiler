@@ -1,3 +1,5 @@
+package midiCompiler
+
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentHashMapOf
 import java.lang.Exception
@@ -50,7 +52,7 @@ sealed class Token {
     object NUMBER_CONTENT : Token()
     object IDENT_CONTENT : Token()
 
-    // Control Token
+    // Control midiCompiler.Token
     object EOF : Token()
 }
 
@@ -58,7 +60,7 @@ sealed class Token {
 
 class Lexer(input : MutableList<String>) {
 
-    private val instructions = input;
+    private val instructions = input
     private var position : Int = 0
 
     public fun next(): Token {
@@ -167,7 +169,7 @@ class Parser(val tokens: Lexer) {
             val op = parseOperator() ?: break
             val (leftBP, rightBP) = bindingPower(op)
             if (leftBP < minBP) break
-            if(op != Operator.Equals ) tokens.next()
+            if(op != Operator.Equals) tokens.next()
             val rhs = parseBinary(rightBP)
             lhs = Expr.Binary(op, lhs, rhs)
         }
@@ -180,8 +182,8 @@ class Parser(val tokens: Lexer) {
             Token.PLUS -> Operator.Plus
             Token.MINUS -> Operator.Minus
             Token.MUL -> Operator.Multiply
-            Token.EQUALS-> if(tokens.next() == Token.DOUBLE_EQUALS) return Operator.Equals else null
-            //Token.DOUBLE_EQUALS -> Operator.Equals
+            Token.EQUALS -> if(tokens.next() == Token.DOUBLE_EQUALS) return Operator.Equals else null
+            //midiCompiler.Token.DOUBLE_EQUALS -> midiCompiler.Operator.Equals
             else -> null
         }
     }
@@ -288,7 +290,6 @@ sealed class Value {
     data class Number(val n: Int) : Value()
     data class Closure(val env: Env, val binder: String, val body: Expr) : Value()
     data class Boolean(val b: kotlin.Boolean) : Value()
-    class EOF() : Value()
 }
 
 fun eval(env: Env, expr: Expr): Value {
@@ -332,7 +333,6 @@ fun eval(env: Env, expr: Expr): Value {
                     evalBinaryNumber(eval(env, expr.x), eval(env, expr.y)) { x, y -> x - y }
             }
         }
-        else -> Value.EOF()
     }
 
 
@@ -372,7 +372,7 @@ fun testEval(expr: MutableList<String>) {
     try {
         println(eval(persistentHashMapOf("fix" to z), Parser(Lexer(expr)).parseExpr()))
     } catch (ex: Exception) {
-        println("Failed to eval with: ${ex.message}")
+        println("Failed to midiCompiler.eval with: ${ex.message}")
     }
 }
 

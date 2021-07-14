@@ -1,12 +1,14 @@
+package midiCompiler
+
 import kotlinx.collections.immutable.persistentHashMapOf
 
 fun main(){
-//    var instructions = readMidi("src/main/resources/midi/AlleMeineEntchen.mid")
-//    var instructions = readMidi("src/main/resources/midi/firstOperation.mid")
-//    var instructions = readMidi("src/main/resources/midi/secondOperation.mid")
-//    var instructions = readMidi("src/main/resources/midi/thirdOperation.mid")
-//    var instructions = readMidi("src/main/resources/midi/fourthOperation.mid")
-    var instructions = readMidi("src/main/resources/midi/fifthTest.mid")
+//    var instructions = midiCompiler.readMidi("src/midiCompiler.main/resources/midi/AlleMeineEntchen.mid")
+//    var instructions = midiCompiler.readMidi("src/midiCompiler.main/resources/midi/firstOperation.mid")
+//    var instructions = midiCompiler.readMidi("src/midiCompiler.main/resources/midi/secondOperation.mid")
+//    var instructions = midiCompiler.readMidi("src/midiCompiler.main/resources/midi/thirdOperation.mid")
+//    var instructions = midiCompiler.readMidi("src/midiCompiler.main/resources/midi/fourthOperation.mid")
+    val instructions = readMidi("src/main/resources/midi/fifthTest.mid")
 
 
 //    println(instructions)

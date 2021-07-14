@@ -1,8 +1,10 @@
+package midiCompiler
+
 import java.io.File
 import javax.sound.midi.*
 
-const val NOTE_ON = 0x90;
-const val NOTE_OFF = 0x80;
+const val NOTE_ON = 0x90
+const val NOTE_OFF = 0x80
 val NOTE_NAMES = arrayOf("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
 
 fun readMidi(pathName : String): MutableList<String> {
