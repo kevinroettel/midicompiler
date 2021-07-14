@@ -1,0 +1,6 @@
+trash/ReadMidi.java
+ trash.ReadMidi
+trash/PlayMidi.java
+ trash.PlayMidi
+trash/Test.java
+ trash.Test
