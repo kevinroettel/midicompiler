@@ -372,7 +372,7 @@ fun testEval(expr: MutableList<String>) {
     try {
         println(eval(persistentHashMapOf("fix" to z), Parser(Lexer(expr)).parseExpr()))
     } catch (ex: Exception) {
-        println("Failed to midiCompiler.eval with: ${ex.message}")
+        println("Failed to  with: ${ex.message}")
     }
 }
 
