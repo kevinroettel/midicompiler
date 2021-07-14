@@ -1,3 +1,5 @@
+import kotlinx.collections.immutable.PersistentMap
+import kotlinx.collections.immutable.persistentHashMapOf
 import java.lang.Exception
 
 sealed class Expr {
@@ -8,6 +10,7 @@ sealed class Expr {
     data class Boolean(val b: kotlin.Boolean) : Expr()
     data class Binary(val operator: Operator, val x: Expr, val y: Expr) : Expr()
     data class If(val condition: Expr, val thenBranch: Expr, val elseBranch: Expr) : Expr()
+    data class Let(val binder: String, val expr: Expr, val body: Expr) : Expr()
 }
 
 enum class Operator {
@@ -23,6 +26,8 @@ sealed class Token {
     object IF : Token()
     object THEN : Token()
     object ELSE : Token()
+    object LET : Token()
+    object IN : Token()
 
     // Symbols
     object LPAREN : Token()
@@ -80,6 +85,8 @@ class Lexer(input : MutableList<String>) {
             "D2" -> Token.THEN
             "E2" -> Token.ELSE
             "F2" -> Token.BACKSLASH
+            "G2" -> Token.LET
+            "A2" -> Token.IN
 
             "C4" -> Token.NUMBER_LIT(number())
             "C5" -> Token.IDENT(ident())
@@ -102,6 +109,8 @@ class Lexer(input : MutableList<String>) {
             "D2" -> Token.THEN
             "E2" -> Token.ELSE
             "F2" -> Token.BACKSLASH
+            "G2" -> Token.LET
+            "A2" -> Token.IN
 
             "C4", "D4", "E4", "F4", "G4", "A4", "B4" -> Token.NUMBER_CONTENT
             "C5", "D5", "E5", "F5", "G5", "A5", "B5" -> Token.IDENT_CONTENT
@@ -158,7 +167,7 @@ class Parser(val tokens: Lexer) {
             val op = parseOperator() ?: break
             val (leftBP, rightBP) = bindingPower(op)
             if (leftBP < minBP) break
-            tokens.next()
+            if(op != Operator.Equals ) tokens.next()
             val rhs = parseBinary(rightBP)
             lhs = Expr.Binary(op, lhs, rhs)
         }
@@ -171,7 +180,8 @@ class Parser(val tokens: Lexer) {
             Token.PLUS -> Operator.Plus
             Token.MINUS -> Operator.Minus
             Token.MUL -> Operator.Multiply
-            Token.DOUBLE_EQUALS -> Operator.Equals
+            Token.EQUALS-> if(tokens.next() == Token.DOUBLE_EQUALS) return Operator.Equals else null
+            //Token.DOUBLE_EQUALS -> Operator.Equals
             else -> null
         }
     }
@@ -205,6 +215,7 @@ class Parser(val tokens: Lexer) {
             is Token.IF -> parseIf()
             is Token.BACKSLASH -> parseLambda()
             is Token.LPAREN -> parseParenthesized()
+            is Token.LET -> parseLet()
             is Token.EOF -> null
             else -> null
         }
@@ -241,6 +252,16 @@ class Parser(val tokens: Lexer) {
         return Expr.Lambda(binder, body)
     }
 
+    private fun parseLet(): Expr {
+        expectNext<Token.LET>("let")
+        val binder = expectNext<Token.IDENT>("binder").ident
+        expectNext<Token.EQUALS>("equals")
+        val expr = parseExpr()
+        expectNext<Token.IN>("in")
+        val body = parseExpr()
+        return Expr.Let(binder, expr, body)
+    }
+
     // if true then 3 else 4
     private fun parseIf(): Expr.If {
         expectNext<Token.IF>("if")
@@ -261,6 +282,74 @@ class Parser(val tokens: Lexer) {
     }
 }
 
+typealias Env = PersistentMap<String, Value>
+
+sealed class Value {
+    data class Number(val n: Int) : Value()
+    data class Closure(val env: Env, val binder: String, val body: Expr) : Value()
+    data class Boolean(val b: kotlin.Boolean) : Value()
+    class EOF() : Value()
+}
+
+fun eval(env: Env, expr: Expr): Value {
+    return when (expr) {
+        is Expr.Number -> Value.Number(expr.n)
+        is Expr.Boolean -> Value.Boolean(expr.b)
+        is Expr.Var -> env[expr.name] ?: throw Exception("${expr.name} is not defined.")
+        is Expr.Lambda -> Value.Closure(env, expr.binder, expr.body)
+        is Expr.Let -> {
+            val evaledExpr = eval(env, expr.expr)
+            val nestedEnv = env.put(expr.binder, evaledExpr)
+            eval(nestedEnv, expr.body)
+        }
+        is Expr.Application -> {
+            val evaledFunc = eval(env, expr.func)
+            val evaledArg = eval(env, expr.arg)
+            when (evaledFunc) {
+                is Value.Closure -> {
+                    val newEnv = evaledFunc.env.put(evaledFunc.binder, evaledArg)
+                    eval(newEnv, evaledFunc.body)
+                }
+                else -> throw Exception("$evaledFunc is not a function")
+            }
+        }
+        is Expr.If -> {
+            val cond = eval(env, expr.condition) as? Value.Boolean ?: throw Exception("Not a boolean")
+            if (cond.b) {
+                eval(env, expr.thenBranch)
+            } else {
+                eval(env, expr.elseBranch)
+            }
+        }
+        is Expr.Binary -> {
+            when (expr.operator) {
+                Operator.Equals -> equalsValue(eval(env, expr.x), eval(env, expr.y))
+                Operator.Multiply ->
+                    evalBinaryNumber(eval(env, expr.x), eval(env, expr.y)) { x, y -> x * y }
+                Operator.Plus ->
+                    evalBinaryNumber(eval(env, expr.x), eval(env, expr.y)) { x, y -> x + y }
+                Operator.Minus ->
+                    evalBinaryNumber(eval(env, expr.x), eval(env, expr.y)) { x, y -> x - y }
+            }
+        }
+        else -> Value.EOF()
+    }
+
+
+}
+
+fun equalsValue(x: Value, y: Value): Value {
+    val v1n = x as? Value.Number ?: throw Exception("Can't compare $x, it's not a number")
+    val v2n = y as? Value.Number ?: throw Exception("Can't compare $y, it's not a number")
+    return Value.Boolean(v1n.n == v2n.n)
+}
+
+fun evalBinaryNumber(v1: Value, v2: Value, f: (Int, Int) -> Int): Value {
+    val v1n = v1 as? Value.Number ?: throw Exception("Can't use a binary operation on $v1, it's not a number")
+    val v2n = v2 as? Value.Number ?: throw Exception("Can't use a binary operation on $v2, it's not a number")
+    return Value.Number(f(v1n.n, v2n.n))
+}
+
 fun test(input: MutableList<String>) {
     println("Lexing: $input")
 
@@ -278,3 +367,13 @@ fun testParser(input: MutableList<String>) {
     val parser = Parser(lexer)
     println(parser.parseExpr())
 }
+
+fun testEval(expr: MutableList<String>) {
+    try {
+        println(eval(persistentHashMapOf("fix" to z), Parser(Lexer(expr)).parseExpr()))
+    } catch (ex: Exception) {
+        println("Failed to eval with: ${ex.message}")
+    }
+}
+
+
