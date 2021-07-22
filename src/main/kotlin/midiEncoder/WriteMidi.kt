@@ -13,7 +13,7 @@ fun getNotes(string : String) : MutableList<String> {
     val chars = string.split(" ").toMutableList()
 
     for (character in chars) {
-        var temp = when (character) {
+        val temp = when (character) {
             "(" -> mutableListOf("C1")
             ")" -> mutableListOf("D1")
             "+" -> mutableListOf("E1")
@@ -22,19 +22,22 @@ fun getNotes(string : String) : MutableList<String> {
             "=" -> mutableListOf("A1")
             "==" -> mutableListOf("A1", "A1")
             "=>" -> mutableListOf("A1", "B1")
-            "IF" -> mutableListOf("C2")
-            "THEN" -> mutableListOf("D2")
-            "ELSE" -> mutableListOf("E2")
-            "LET" -> mutableListOf("G2")
-            "IN" -> mutableListOf("A2")
+            "if" -> mutableListOf("C2")
+            "then" -> mutableListOf("D2")
+            "else" -> mutableListOf("E2")
+            "let" -> mutableListOf("G2")
+            "in" -> mutableListOf("A2")
             "\\" -> mutableListOf("F2")
-            "LOOP" -> mutableListOf("C3")
+            "loop" -> mutableListOf("C3")
             "{" -> mutableListOf("D3")
             "}" -> mutableListOf("E3")
             "<" -> mutableListOf("F3")
             ">" -> mutableListOf("G3")
-            "TRUE" -> mutableListOf("C6")
-            "FALSE" -> mutableListOf("D6")
+            "true" -> mutableListOf("C6")
+            "false" -> mutableListOf("D6")
+            "!" -> mutableListOf("A3")
+            ":" -> mutableListOf("B3")
+            ";" -> mutableListOf("B2")
             else -> parse(character)
         }
 
@@ -134,8 +137,8 @@ fun writeToFile(notes : List<String>) {
 
         //****  set track name (meta event)  ****
         mt = MetaMessage()
-        val TrackName: String = "midifile track"
-        mt.setMessage(0x03, TrackName.toByteArray(), TrackName.length)
+        val trackName = "midifile track"
+        mt.setMessage(0x03, trackName.toByteArray(), trackName.length)
         me = MidiEvent(mt, 0.toLong())
         t.add(me)
 
@@ -166,7 +169,7 @@ fun writeToFile(notes : List<String>) {
             val key = noteIndex + newOctave
 
             mm = ShortMessage()
-            mm.setMessage(0x90, key, 0x60)
+            mm.setMessage(NOTE_ON, key, 0x60)
             me = MidiEvent(mm, 1.toLong())
             t.add(me)
         }
