@@ -9,7 +9,7 @@ public class Test {
     public static final String[] NOTE_NAMES = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 
     public static void main(String[] args) throws Exception {
-        Sequence sequence = MidiSystem.getSequence(new File("D:\\projects\\midicompiler\\src\\Keys.mid"));
+        Sequence sequence = MidiSystem.getSequence(new File("src/main/resources/midi/Keys.mid"));
 
         int trackNumber = 0;
         for (Track track : sequence.getTracks()) {

@@ -2,7 +2,7 @@ package midiCompiler
 
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentHashMapOf
-import java.lang.Exception
+import kotlin.Exception
 
 sealed class Expr {
     data class Var(val name: String) : Expr()
@@ -13,10 +13,11 @@ sealed class Expr {
     data class Binary(val operator: Operator, val x: Expr, val y: Expr) : Expr()
     data class If(val condition: Expr, val thenBranch: Expr, val elseBranch: Expr) : Expr()
     data class Let(val binder: String, val expr: Expr, val body: Expr) : Expr()
+    data class Loop(val iterator : Int, val returnValue : String, val body: Expr) : Expr()
 }
 
 enum class Operator {
-    Equals, Plus, Minus, Multiply
+    Equals, Plus, Minus, Multiply, Greater, Less
 }
 
 sealed class Token {
@@ -30,10 +31,14 @@ sealed class Token {
     object ELSE : Token()
     object LET : Token()
     object IN : Token()
+    object LOOP : Token()
+
 
     // Symbols
     object LPAREN : Token()
     object RPAREN : Token()
+    object LCURLPAREN : Token()
+    object RCURLPAREN : Token()
     object BACKSLASH : Token()
     object ARROW : Token()
     object EQUALS : Token()
@@ -43,6 +48,10 @@ sealed class Token {
     object MINUS : Token()
     object MUL : Token()
     object DOUBLE_EQUALS : Token()
+    object GREATER : Token()
+    object LESS : Token()
+
+    object NOT : Token()
 
     data class IDENT(val ident: String) : Token()
 
@@ -89,9 +98,17 @@ class Lexer(input : MutableList<String>) {
             "F2" -> Token.BACKSLASH
             "G2" -> Token.LET
             "A2" -> Token.IN
+            "C3" -> Token.LOOP
+            "D3" -> Token.LCURLPAREN
+            "E3" -> Token.RCURLPAREN
+            "F3" -> Token.LESS
+            "G3" -> Token.GREATER
+            "A3" -> Token.NOT
 
             "C4" -> Token.NUMBER_LIT(number())
             "C5" -> Token.IDENT(ident())
+            "C6" -> Token.BOOLEAN_LIT(true)
+            "D6" -> Token.BOOLEAN_LIT(false)
             else -> throw Exception("Unexpected Char")
         }
     }
@@ -113,9 +130,17 @@ class Lexer(input : MutableList<String>) {
             "F2" -> Token.BACKSLASH
             "G2" -> Token.LET
             "A2" -> Token.IN
+            "C3" -> Token.LOOP
+            "D3" -> Token.LCURLPAREN
+            "E3" -> Token.RCURLPAREN
+            "F3" -> Token.LESS
+            "G3" -> Token.GREATER
+            "A3" -> Token.NOT
 
             "C4", "D4", "E4", "F4", "G4", "A4", "B4" -> Token.NUMBER_CONTENT
             "C5", "D5", "E5", "F5", "G5", "A5", "B5" -> Token.IDENT_CONTENT
+            "C6" -> Token.BOOLEAN_LIT(true)
+            "D6" -> Token.BOOLEAN_LIT(false)
             else -> throw Exception("Unexpected Char")
         }
     }
@@ -183,6 +208,8 @@ class Parser(val tokens: Lexer) {
             Token.MINUS -> Operator.Minus
             Token.MUL -> Operator.Multiply
             Token.EQUALS -> if(tokens.next() == Token.DOUBLE_EQUALS) return Operator.Equals else null
+            Token.GREATER -> Operator.Greater
+            Token.LESS -> Operator.Less
             //midiCompiler.Token.DOUBLE_EQUALS -> midiCompiler.Operator.Equals
             else -> null
         }
@@ -190,7 +217,7 @@ class Parser(val tokens: Lexer) {
 
     fun bindingPower(op: Operator): Pair<Int, Int> {
         return when(op) {
-            Operator.Equals -> 1 to 2
+            Operator.Equals, Operator.Greater, Operator.Less -> 1 to 2
             Operator.Plus, Operator.Minus -> 3 to 4
             Operator.Multiply -> 5 to 6
         }
@@ -218,6 +245,7 @@ class Parser(val tokens: Lexer) {
             is Token.BACKSLASH -> parseLambda()
             is Token.LPAREN -> parseParenthesized()
             is Token.LET -> parseLet()
+            is Token.LOOP -> parseLoop()
             is Token.EOF -> null
             else -> null
         }
@@ -273,6 +301,16 @@ class Parser(val tokens: Lexer) {
         expectNext<Token.ELSE>("else")
         val elseBranch = parseExpr()
         return Expr.If(condition, thenBranch, elseBranch)
+    }
+
+    private fun parseLoop() : Expr.Loop{
+        expectNext<Token.LOOP>( "loop")
+        val iterator = expectNext<Token.NUMBER_LIT>("iterator").n
+        val returnValue = expectNext<Token.IDENT>("returnValue").ident
+        expectNext<Token.LCURLPAREN>("{")
+        val body = parseExpr()
+        expectNext<Token.RCURLPAREN>("}")
+        return Expr.Loop(iterator, returnValue, body)
     }
 
     private inline fun <reified A>expectNext(msg: String): A {
@@ -331,7 +369,19 @@ fun eval(env: Env, expr: Expr): Value {
                     evalBinaryNumber(eval(env, expr.x), eval(env, expr.y)) { x, y -> x + y }
                 Operator.Minus ->
                     evalBinaryNumber(eval(env, expr.x), eval(env, expr.y)) { x, y -> x - y }
+                Operator.Greater -> greaterThanValue(eval(env,expr.x), eval(env,expr.y))
+                Operator.Less -> lessThanValue(eval(env,expr.x), eval(env,expr.y))
             }
+        }
+        is Expr.Loop -> {
+            var evalExpr = eval(env,expr.body)
+            var newEnv = env.put(expr.returnValue,evalExpr)
+            for (i in 3 .. expr.iterator)
+            {
+                evalExpr = eval(newEnv,expr.body)
+                newEnv = env.put(expr.returnValue,evalExpr)
+            }
+            eval(newEnv,expr.body)
         }
     }
 
@@ -339,9 +389,24 @@ fun eval(env: Env, expr: Expr): Value {
 }
 
 fun equalsValue(x: Value, y: Value): Value {
+    val v1n = x
+    val v2n = y
+    if (v1n is Value.Number && v2n is Value.Number){
+        return Value.Boolean(v1n.n == v2n.n)
+    } else if(v1n is Value.Boolean && v2n is Value.Boolean){
+        return Value.Boolean(v1n.b == v2n.b)
+    } else throw Exception("Can't compare $x and $y, they're  either not comparable or they're neither a number nor a boolean")
+}
+
+fun greaterThanValue(x : Value, y: Value) : Value{
     val v1n = x as? Value.Number ?: throw Exception("Can't compare $x, it's not a number")
     val v2n = y as? Value.Number ?: throw Exception("Can't compare $y, it's not a number")
-    return Value.Boolean(v1n.n == v2n.n)
+    return Value.Boolean(v1n.n > v2n.n)
+}
+fun lessThanValue(x : Value, y: Value) : Value{
+    val v1n = x as? Value.Number ?: throw Exception("Can't compare $x, it's not a number")
+    val v2n = y as? Value.Number ?: throw Exception("Can't compare $y, it's not a number")
+    return Value.Boolean(v1n.n < v2n.n)
 }
 
 fun evalBinaryNumber(v1: Value, v2: Value, f: (Int, Int) -> Int): Value {
@@ -370,10 +435,13 @@ fun testParser(input: MutableList<String>) {
 
 fun testEval(expr: MutableList<String>) {
     try {
-        println(eval(persistentHashMapOf("fix" to z), Parser(Lexer(expr)).parseExpr()))
+        println(eval(persistentHashMapOf("G" to z), Parser(Lexer(expr)).parseExpr()))
     } catch (ex: Exception) {
         println("Failed to  with: ${ex.message}")
     }
+}
+fun testEval2(expr: MutableList<String>){
+    println(eval(persistentHashMapOf("E" to Value.Boolean(false),"G" to z),Parser(Lexer(expr)).parseExpr()))
 }
 
 
