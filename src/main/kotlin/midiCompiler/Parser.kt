@@ -20,7 +20,7 @@ class Parser(private val tokens: Lexer) {
         return lhs
     }
 
-    private fun parseOperator(): Operator? {
+    private fun parseOperator() : Operator? {
         return when(tokens.peek()) {
             Token.PLUS -> Operator.Plus
             Token.MINUS -> Operator.Minus
@@ -33,7 +33,7 @@ class Parser(private val tokens: Lexer) {
         }
     }
 
-    private fun bindingPower(op: Operator): Pair<Int, Int> {
+    private fun bindingPower(op: Operator) : Pair<Int, Int> {
         return when(op) {
             Operator.Equals, Operator.Greater, Operator.Less -> 1 to 2
             Operator.Plus, Operator.Minus -> 3 to 4
@@ -41,7 +41,7 @@ class Parser(private val tokens: Lexer) {
         }
     }
 
-    private fun parseApplication(): Expr {
+    private fun parseApplication() : Expr {
         val func = parseAtom()
         val args: MutableList<Expr> = mutableListOf()
         while (true) {
@@ -50,11 +50,11 @@ class Parser(private val tokens: Lexer) {
         return args.fold(func) { acc, arg -> Expr.Application(acc, arg) }
     }
 
-    private fun parseAtom(): Expr {
+    private fun parseAtom() : Expr {
         return tryParseAtom() ?: throw Exception("Expected expression, but saw unexpected token: ${tokens.peek()}")
     }
 
-    private fun tryParseAtom(): Expr? {
+    private fun tryParseAtom() : Expr? {
         return when (tokens.peek()) {
             is Token.BOOLEAN_LIT -> parseBoolean()
             is Token.NUMBER_LIT, Token.NUMBER_CONTENT -> parseNumber()
@@ -71,29 +71,29 @@ class Parser(private val tokens: Lexer) {
         }
     }
 
-    private fun parseBoolean(): Expr {
+    private fun parseBoolean() : Expr {
         val t = expectNext<Token.BOOLEAN_LIT>("boolean literal")
         return Expr.Boolean(t.b)
     }
 
-    private fun parseNumber(): Expr {
+    private fun parseNumber() : Expr {
         val t = expectNext<Token.NUMBER_LIT>("number literal")
         return Expr.Number(t.n)
     }
 
-    private fun parseVar(): Expr {
+    private fun parseVar() : Expr {
         val t = expectNext<Token.IDENT>("identifier")
         return Expr.Var(t.ident)
     }
 
-    private fun parseParenthesized(): Expr {
+    private fun parseParenthesized() : Expr {
         expectNext<Token.LPAREN>("(")
         val inner = parseExpr()
         expectNext<Token.RPAREN>(")")
         return inner
     }
 
-    private fun parseLambda(): Expr {
+    private fun parseLambda() : Expr {
         // \binder => body
         expectNext<Token.BACKSLASH>("\\")
         val binder = expectNext<Token.IDENT>("ident").ident
@@ -102,7 +102,7 @@ class Parser(private val tokens: Lexer) {
         return Expr.Lambda(binder, body)
     }
 
-    private fun parseLet(): Expr {
+    private fun parseLet() : Expr {
         expectNext<Token.LET>("let")
         val binder = expectNext<Token.IDENT>("binder").ident
         expectNext<Token.EQUALS>("equals")
@@ -113,7 +113,7 @@ class Parser(private val tokens: Lexer) {
     }
 
     // if true then 3 else 4
-    private fun parseIf(): Expr.If {
+    private fun parseIf() : Expr.If {
         expectNext<Token.IF>("if")
         val condition = parseExpr()
         expectNext<Token.THEN>("then")
@@ -147,7 +147,7 @@ class Parser(private val tokens: Lexer) {
         return Expr.Assignment(binder,value,parseExpr())
     }
 
-    private inline fun <reified A>expectNext(msg: String): A {
+    private inline fun <reified A>expectNext(msg: String) : A {
         val next = tokens.next()
         if (next !is A) {
             throw Exception("Unexpected token: expected $msg, but saw $next")
@@ -162,7 +162,3 @@ fun testParser(input: MutableList<String>) {
     val parser = Parser(lexer)
     println(parser.parseExpr())
 }
-
-
-
-

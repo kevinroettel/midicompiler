@@ -11,9 +11,9 @@ sealed class Expr {
     data class Binary(val operator: Operator, val x: Expr, val y: Expr) : Expr()
     data class If(val condition: Expr, val thenBranch: Expr, val elseBranch: Expr) : Expr()
     data class Let(val binder: String, val expr: Expr, val body: Expr) : Expr()
-    data class Loop(val iterator : Int, val returnValue : String, val body: Expr) : Expr()
-    data class Unary(val op: UnaryOperator, val x : Expr) : Expr()
-    data class Assignment( val binder: String, val expr: Expr, val restCode : Expr) : Expr()
+    data class Loop(val iterator: Int, val returnValue: String, val body: Expr) : Expr()
+    data class Unary(val op: UnaryOperator, val x: Expr) : Expr()
+    data class Assignment( val binder: String, val expr: Expr, val restCode: Expr) : Expr()
 }
 
 enum class Operator {
@@ -35,7 +35,6 @@ sealed class Token {
     object LET : Token()
     object IN : Token()
     object LOOP : Token()
-
 
     // Symbols
     object LPAREN : Token()

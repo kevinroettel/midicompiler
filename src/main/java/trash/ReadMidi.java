@@ -6,18 +6,18 @@ import javax.sound.midi.*;
 
 public class ReadMidi {
     private static void playMidiFile(String name) throws Exception {
-        //Sequencer und Synthesizer initialisieren
+        // Sequencer und Synthesizer initialisieren
         Sequencer sequencer = MidiSystem.getSequencer();
         Transmitter trans = sequencer.getTransmitter();
         Synthesizer synth = MidiSystem.getSynthesizer();
         Receiver rcvr = synth.getReceiver();
 
-        //Beide öffnen und verbinden
+        // Beide öffnen und verbinden
         sequencer.open();
         synth.open();
         trans.setReceiver(rcvr);
 
-        //Sequence lesen und abspielen
+        // Sequence lesen und abspielen
         Sequence seq = MidiSystem.getSequence(new File(name));
         sequencer.setSequence(seq);
         sequencer.setTempoInBPM(145);
@@ -34,7 +34,7 @@ public class ReadMidi {
             }
         }
 
-        //Sequencer anhalten und Geräte schließen
+        // Sequencer anhalten und Geräte schließen
         sequencer.stop();
         sequencer.close();
         synth.close();

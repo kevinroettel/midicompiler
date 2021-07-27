@@ -1,11 +1,11 @@
 package midiCompiler
 
-fun eval(env: Env, expr: Expr): Value {
+fun eval(env: Env, expr: Expr) : Value {
     return when (expr) {
-        is Expr.Number -> Value.Number(expr.n)
+        is Expr.Number  -> Value.Number(expr.n)
         is Expr.Boolean -> Value.Boolean(expr.b)
-        is Expr.Var -> env[expr.name] ?: throw Exception("${expr.name} is not defined.")
-        is Expr.Lambda -> Value.Closure(env, expr.binder, expr.body)
+        is Expr.Var     -> env[expr.name] ?: throw Exception("${expr.name} is not defined.")
+        is Expr.Lambda  -> Value.Closure(env, expr.binder, expr.body)
         is Expr.Let -> {
             val evaledExpr = eval(env, expr.expr)
             val nestedEnv = env.put(expr.binder, evaledExpr)
@@ -64,12 +64,9 @@ fun eval(env: Env, expr: Expr): Value {
         is Expr.Assignment -> {
             val evaledExpr = eval(env, expr.expr)
             val nestedEnv = env.put(expr.binder, evaledExpr)
-            eval(nestedEnv,expr.restCode)
-
+            eval(nestedEnv, expr.restCode)
         }
     }
-
-
 }
 
 fun equalsValue(x: Value, y: Value): Value {
@@ -80,24 +77,24 @@ fun equalsValue(x: Value, y: Value): Value {
     } else throw Exception("Can't compare $x and $y, they're  either not comparable or they're neither a number nor a boolean")
 }
 
-fun greaterThanValue(x : Value, y: Value) : Value{
+fun greaterThanValue(x : Value, y : Value) : Value {
     val v1n = x as? Value.Number ?: throw Exception("Can't compare $x, it's not a number")
     val v2n = y as? Value.Number ?: throw Exception("Can't compare $y, it's not a number")
     return Value.Boolean(v1n.n > v2n.n)
 }
-fun lessThanValue(x : Value, y: Value) : Value{
+fun lessThanValue(x : Value, y : Value) : Value {
     val v1n = x as? Value.Number ?: throw Exception("Can't compare $x, it's not a number")
     val v2n = y as? Value.Number ?: throw Exception("Can't compare $y, it's not a number")
     return Value.Boolean(v1n.n < v2n.n)
 }
 
-fun evalBinaryNumber(v1: Value, v2: Value, f: (Int, Int) -> Int): Value {
+fun evalBinaryNumber(v1 : Value, v2 : Value, f : (Int, Int) -> Int) : Value {
     val v1n = v1 as? Value.Number ?: throw Exception("Can't use a binary operation on $v1, it's not a number")
     val v2n = v2 as? Value.Number ?: throw Exception("Can't use a binary operation on $v2, it's not a number")
     return Value.Number(f(v1n.n, v2n.n))
 }
 
-fun evalMidi(expr: MutableList<String>, environments :Env ) {
+fun evalMidi(expr : MutableList<String>, environments : Env) {
     try {
         println(eval(environments, Parser(Lexer(expr)).parseExpr()))
     } catch (ex: Exception) {

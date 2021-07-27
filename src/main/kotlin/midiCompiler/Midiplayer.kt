@@ -7,32 +7,34 @@ import java.lang.Exception
 class MidiPlayer (){
     private var data : MutableList<Int> = mutableListOf()
 
-    fun setData( newData :MutableList<Int>){
+    fun setData(newData : MutableList<Int>) {
         data = newData
     }
 
-    constructor(dataString : MutableList<String>) : this(){
+    constructor(dataString : MutableList<String>) : this() {
         setDataFromMutableListOfString(dataString)
     }
 
     fun playMidi() {
         val synth = MidiSystem.getSynthesizer()
         synth.open()
-        val rcvr = synth.receiver
+        val receiver = synth.receiver
         val msg = ShortMessage()
         for (i in data.indices) {
             msg.setMessage(ShortMessage.NOTE_ON, 0, data[i], 64)
-            rcvr.send(msg, -1)
+            receiver.send(msg, -1)
+
             try {
                 Thread.sleep((1 * 400).toLong())
             } catch (e: Exception) {}
+
             msg.setMessage(ShortMessage.NOTE_OFF, 0, data[i], 0)
-            rcvr.send(msg, -1)
+            receiver.send(msg, -1)
         }
         synth.close()
     }
 
-    fun setDataFromMutableListOfString(dataString : MutableList<String>){
+    fun setDataFromMutableListOfString(dataString : MutableList<String>) {
         val newData = mutableListOf<Int>()
         for ( note in dataString) {
             val noteName = note[0]

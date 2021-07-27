@@ -4,8 +4,8 @@ import javax.sound.midi.*;
 
 public class PlayMidi {
     private static void playAlleMeineEntchen() throws Exception {
-        //Partitur {{Tonhoehe, DauerInViertelNoten, AnzahlWdh},...}
-        final int DATA[][] = {
+        // Partitur {{Tonhoehe, DauerInViertelNoten, AnzahlWdh},...}
+        final int[][] DATA = {
             { 60, 1, 1 }, //C
             { 62, 1, 1 }, //D
             { 64, 1, 1 }, //E
@@ -26,17 +26,15 @@ public class PlayMidi {
         Receiver rcvr = synth.getReceiver();
 
         ShortMessage msg = new ShortMessage();
-        for (int i = 0; i < DATA.length; ++i) {
-            for (int j = 0; j < DATA[i][2]; ++j) {
-                msg.setMessage(ShortMessage.NOTE_ON, 0, DATA[i][0], 64);
+        for (int[] datum : DATA) {
+            for (int j = 0; j < datum[2]; ++j) {
+                msg.setMessage(ShortMessage.NOTE_ON, 0, datum[0], 64);
                 rcvr.send(msg, -1);
                 try {
-                    Thread.sleep(DATA[i][1] * 400);
-                } catch (Exception e) {
+                    Thread.sleep(datum[1] * 400L);
+                } catch (Exception ignored) {}
 
-                }
-
-                msg.setMessage(ShortMessage.NOTE_OFF, 0, DATA[i][0], 0);
+                msg.setMessage(ShortMessage.NOTE_OFF, 0, datum[0], 0);
                 rcvr.send(msg, -1);
             }
         }

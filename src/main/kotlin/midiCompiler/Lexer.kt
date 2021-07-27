@@ -5,7 +5,7 @@ class Lexer(input : MutableList<String>) {
     private val instructions = input
     private var position : Int = 0
 
-    fun next(): Token {
+    fun next() : Token {
         if (instructions.size == position) return Token.EOF
 
         return when (instructions[position++]) {
